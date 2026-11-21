@@ -2,12 +2,14 @@
 
 berlin <- "Europe/Berlin"
 
-fold_tbl <- function(local = c(
-                       "2021-10-31 02:30:00",
-                       "2021-10-31 04:00:00"
-                     ),
-                     device = "dev-1",
-                     tz = berlin) {
+fold_tbl <- function(
+  local = c(
+    "2021-10-31 02:30:00",
+    "2021-10-31 04:00:00"
+  ),
+  device = "dev-1",
+  tz = berlin
+) {
   tibble(device = device, tz = tz, local = local)
 }
 
@@ -19,7 +21,8 @@ test_that("unambiguous times convert and input is preserved", {
     device = c("a", "a", "b"),
     tz = c(berlin, berlin, "Asia/Shanghai"),
     local = c(
-      "2021-06-15 12:00:00", "2021-06-15 12:10:00",
+      "2021-06-15 12:00:00",
+      "2021-06-15 12:10:00",
       "2021-03-28 10:30:00"
     ),
     value = c(1.5, 2.5, 3.5)
@@ -67,7 +70,8 @@ test_that("a fold not uniquely resolvable fails the whole batch", {
 test_that("a nonexistent (gap) wall time fails with device and rows", {
   skip_if_not(berlin %in% OlsonNames())
   logs <- tibble(
-    device = "dev-2", tz = berlin,
+    device = "dev-2",
+    tz = berlin,
     local = c("2021-03-28 02:30:00", "2021-03-28 04:00:00")
   )
   cnd <- expect_error(
@@ -120,14 +124,16 @@ test_that("ambiguity introduced early is resolved far downstream", {
 test_that("southern-hemisphere fold and gap are handled", {
   skip_if_not("Australia/Sydney" %in% OlsonNames())
   fold <- tibble(
-    device = "sy", tz = "Australia/Sydney",
+    device = "sy",
+    tz = "Australia/Sydney",
     local = c("2021-04-04 02:30:00", "2021-04-04 04:00:00")
   )
   out <- local_time_to_utc(fold, device, tz, local, 5400, 5400)
   expect_identical(utc_chr(out$UTC[1]), "2021-04-03 16:30:00")
 
   gap <- tibble(
-    device = "sy2", tz = "Australia/Sydney",
+    device = "sy2",
+    tz = "Australia/Sydney",
     local = "2021-10-03 02:30:00"
   )
   cnd <- expect_error(
@@ -140,7 +146,8 @@ test_that("southern-hemisphere fold and gap are handled", {
 test_that("fractional seconds are preserved", {
   skip_if_not(berlin %in% OlsonNames())
   frac <- tibble(
-    device = "f", tz = berlin,
+    device = "f",
+    tz = berlin,
     local = c("2021-06-15 12:00:00.25", "2021-06-15 12:00:01.75")
   )
   out <- local_time_to_utc(frac, device, tz, local, 0, 10)
@@ -167,8 +174,10 @@ test_that("original row order is retained with interleaved devices", {
     device = c("a", "b", "a", "b"),
     tz = rep("UTC", 4),
     local = c(
-      "2021-01-01 00:00:00", "2021-02-01 00:00:00",
-      "2021-01-01 00:10:00", "2021-02-01 00:10:00"
+      "2021-01-01 00:00:00",
+      "2021-02-01 00:00:00",
+      "2021-01-01 00:10:00",
+      "2021-02-01 00:10:00"
     )
   )
   out <- local_time_to_utc(inter, device, tz, local, 0, 3600)
@@ -182,8 +191,10 @@ test_that("failures across several devices are aggregated", {
     device = c("good", "good", "bad-gap", "bad-fold"),
     tz = c("UTC", "UTC", berlin, berlin),
     local = c(
-      "2021-01-01 00:00:00", "2021-01-01 00:10:00",
-      "2021-03-28 02:30:00", "2021-10-31 02:30:00"
+      "2021-01-01 00:00:00",
+      "2021-01-01 00:10:00",
+      "2021-03-28 02:30:00",
+      "2021-10-31 02:30:00"
     )
   )
   cnd <- expect_error(
@@ -197,7 +208,8 @@ test_that("failures across several devices are aggregated", {
 
 test_that("unparseable and missing times are reported", {
   bad <- tibble(
-    device = "u", tz = "UTC",
+    device = "u",
+    tz = "UTC",
     local = c("2021-01-01 00:00:00", "nonsense", NA)
   )
   cnd <- expect_error(
@@ -210,7 +222,9 @@ test_that("unparseable and missing times are reported", {
 
 test_that("unknown and inconsistent time zones are rejected", {
   unknown <- tibble(
-    device = "x", tz = "Not/AZone", local = "2021-01-01 00:00:00"
+    device = "x",
+    tz = "Not/AZone",
+    local = "2021-01-01 00:00:00"
   )
   cnd <- expect_error(
     local_time_to_utc(unknown, device, tz, local, 0, 10),
@@ -266,8 +280,10 @@ test_that("the output column can be renamed and replaced", {
   expect_false("UTC" %in% names(out))
 
   logs2 <- tibble(
-    device = "d", tz = berlin,
-    local = "2021-06-15 12:00:00", UTC = 1
+    device = "d",
+    tz = berlin,
+    local = "2021-06-15 12:00:00",
+    UTC = 1
   )
   out2 <- local_time_to_utc(logs2, device, tz, local, 0, 10)
   expect_s3_class(out2$UTC, "POSIXct")
@@ -278,7 +294,8 @@ test_that("resolution scales linearly without enumerating sequences", {
   # A long chain of fold-bearing records resolves to one path; a quadratic
   # enumeration of fold combinations would make many rows prohibitive.
   n <- 2000L
-  inst <- as.POSIXct("2021-10-30 20:00:00", tz = "UTC") + (seq_len(n) - 1L) * 600
+  inst <- as.POSIXct("2021-10-30 20:00:00", tz = "UTC") +
+    (seq_len(n) - 1L) * 600
   logs <- fold_tbl(local = format(inst, "%Y-%m-%d %H:%M:%S", tz = berlin))
   out <- local_time_to_utc(logs, device, tz, local, 600, 3600)
   expect_identical(as.numeric(sort(out$UTC)), as.numeric(inst))

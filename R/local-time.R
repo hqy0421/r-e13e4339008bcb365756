@@ -65,13 +65,15 @@
 #'   ),
 #'   error = function(e) message(e$message)
 #' )
-local_time_to_utc <- function(.data,
-                              device_col,
-                              tz_col,
-                              local_col,
-                              min_interval,
-                              max_interval,
-                              .name = "UTC") {
+local_time_to_utc <- function(
+  .data,
+  device_col,
+  tz_col,
+  local_col,
+  min_interval,
+  max_interval,
+  .name = "UTC"
+) {
   if (!is.data.frame(.data)) {
     abort_local_time_not_data_frame(.data)
   }
@@ -114,10 +116,13 @@ local_time_to_utc <- function(.data,
       issues <- c(
         issues,
         list(local_issue(
-          device = dev, kind = "inconsistent_tz", rows = idx,
+          device = dev,
+          kind = "inconsistent_tz",
+          rows = idx,
           detail = paste0(
             "time zone column must contain one known IANA zone per device, ",
-            "got: ", paste(unique(format(dev_zones)), collapse = ", ")
+            "got: ",
+            paste(unique(format(dev_zones)), collapse = ", ")
           )
         ))
       )
@@ -128,7 +133,9 @@ local_time_to_utc <- function(.data,
       issues <- c(
         issues,
         list(local_issue(
-          device = dev, kind = "unknown_tz", rows = idx,
+          device = dev,
+          kind = "unknown_tz",
+          rows = idx,
           detail = paste0("unknown IANA time zone: ", format(zone))
         ))
       )
@@ -147,7 +154,9 @@ local_time_to_utc <- function(.data,
       issues <- c(
         issues,
         list(local_issue(
-          device = dev, kind = "gap", rows = idx[gap_pos],
+          device = dev,
+          kind = "gap",
+          rows = idx[gap_pos],
           detail = "wall-clock time does not exist in this time zone (clock jump forward)"
         ))
       )
@@ -203,7 +212,9 @@ parse_wall_character <- function(x) {
   out <- rep(NA_real_, length(x))
   pending <- !is.na(x) & nzchar(x)
   for (fmt in formats) {
-    if (!any(pending)) break
+    if (!any(pending)) {
+      break
+    }
     parsed <- suppressWarnings(as.POSIXct(x[pending], tz = "UTC", format = fmt))
     ok <- !is.na(parsed)
     if (any(ok)) {
@@ -220,7 +231,9 @@ local_input_issues <- function(wall, idx) {
     return(list())
   }
   list(local_issue(
-    device = NULL, kind = "unparseable", rows = idx[bad],
+    device = NULL,
+    kind = "unparseable",
+    rows = idx[bad],
     detail = "missing or unparseable local wall-clock time"
   ))
 }
@@ -331,18 +344,24 @@ solve_device <- function(cand, lo, hi) {
   }
 
   viable <- lapply(
-    seq_len(n), function(i) which(fwd[[i]] > 0L & bwd[[i]] > 0L)
+    seq_len(n),
+    function(i) which(fwd[[i]] > 0L & bwd[[i]] > 0L)
   )
   ambiguous <- which(lengths(viable) >= 2L)
   if (total >= 2L || length(ambiguous) > 0L) {
-    return(list(issue = list(
-      kind = "ambiguous",
-      positions = ambiguous,
-      detail = paste0(
-        "multiple sequences satisfy the closed interval [", lo, ", ", hi,
-        "] seconds; folds at these rows cannot be resolved uniquely"
+    return(list(
+      issue = list(
+        kind = "ambiguous",
+        positions = ambiguous,
+        detail = paste0(
+          "multiple sequences satisfy the closed interval [",
+          lo,
+          ", ",
+          hi,
+          "] seconds; folds at these rows cannot be resolved uniquely"
+        )
       )
-    )))
+    ))
   }
 
   # Exactly one global explanation: backtrack through predecessor pointers.
@@ -363,13 +382,18 @@ solve_device <- function(cand, lo, hi) {
 infeasibility_issue <- function(cand, fwd, lo, hi) {
   n <- length(cand)
   dead <- which(vapply(fwd, function(f) all(f == 0L), logical(1)))[1L]
-  if (is.na(dead)) dead <- n
+  if (is.na(dead)) {
+    dead <- n
+  }
   list(
     kind = "infeasible",
     positions = c(dead - 1L, dead),
     detail = paste0(
       "no sequence keeps every adjacent interval within the closed interval [",
-      lo, ", ", hi, "] seconds; constraint first violated between these rows"
+      lo,
+      ", ",
+      hi,
+      "] seconds; constraint first violated between these rows"
     )
   )
 }
@@ -402,23 +426,29 @@ append_utc_column <- function(data, utc, name) {
 # Errors ---------------------------------------------------------------------
 
 abort_local_time_conversion <- function(issues) {
-  bullets <- vapply(issues, function(issue) {
-    rows <- issue$rows
-    row_text <- if (length(rows) <= 6L) {
-      paste(rows, collapse = ", ")
-    } else {
-      paste0(
-        paste(rows[1:5], collapse = ", "), ", ... (",
-        length(rows), " rows in total)"
-      )
-    }
-    dev <- if (is.null(issue$device)) {
-      ""
-    } else {
-      paste0(" device ", tick(issue$device), ",")
-    }
-    paste0(dev, " source row(s) ", row_text, ": ", issue$detail)
-  }, character(1))
+  bullets <- vapply(
+    issues,
+    function(issue) {
+      rows <- issue$rows
+      row_text <- if (length(rows) <= 6L) {
+        paste(rows, collapse = ", ")
+      } else {
+        paste0(
+          paste(rows[1:5], collapse = ", "),
+          ", ... (",
+          length(rows),
+          " rows in total)"
+        )
+      }
+      dev <- if (is.null(issue$device)) {
+        ""
+      } else {
+        paste0(" device ", tick(issue$device), ",")
+      }
+      paste0(dev, " source row(s) ", row_text, ": ", issue$detail)
+    },
+    character(1)
+  )
 
   tibble_abort(
     call = caller_env(),
@@ -447,7 +477,11 @@ abort_local_time_missing_column <- function(name, arg, call = caller_env()) {
   tibble_abort(
     call = call,
     paste0(
-      "Column ", tick(name), " (from `", arg, "`) can't be found in `.data`."
+      "Column ",
+      tick(name),
+      " (from `",
+      arg,
+      "`) can't be found in `.data`."
     )
   )
 }
@@ -456,8 +490,11 @@ abort_local_time_bad_interval <- function(x, arg, call = caller_env()) {
   tibble_abort(
     call = call,
     paste0(
-      "`", arg, "` must be one finite, non-negative number of seconds, not ",
-      obj_sum(x), "."
+      "`",
+      arg,
+      "` must be one finite, non-negative number of seconds, not ",
+      obj_sum(x),
+      "."
     )
   )
 }
@@ -466,8 +503,11 @@ abort_local_time_interval_order <- function(lo, hi, call = caller_env()) {
   tibble_abort(
     call = call,
     paste0(
-      "`min_interval` (", lo, ") must not be greater than `max_interval` (",
-      hi, ")."
+      "`min_interval` (",
+      lo,
+      ") must not be greater than `max_interval` (",
+      hi,
+      ")."
     )
   )
 }
@@ -483,7 +523,9 @@ abort_local_time_unsupported <- function(type, call = caller_env()) {
   tibble_abort(
     call = call,
     paste0(
-      "The local time column must be character or POSIXct, not ", type, "."
+      "The local time column must be character or POSIXct, not ",
+      type,
+      "."
     )
   )
 }
